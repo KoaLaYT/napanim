@@ -21,9 +21,9 @@ pub fn build(b: *std.Build) void {
     const build_plugin_step = b.step("plugin", "Build the plugin");
     const plugin_lib = b.addLibrary(.{
         .linkage = .dynamic,
-        .name = "plugin_demo",
+        .name = "plugin_sprite",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/plugin_demo.zig"),
+            .root_source_file = b.path("src/plugin_sprite.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{

@@ -1,15 +1,23 @@
 const std = @import("std");
 const raylib = @import("c").raylib;
+const rlgl = @import("c").rlgl;
 const Plugin = @import("plugin_api.zig").Plugin;
 
 pub fn main() !void {
-    raylib.InitWindow(600, 600, "napanim");
+    var gpa = std.heap.DebugAllocator(.{}).init;
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    raylib.InitWindow(720, 720, "napanim");
     defer raylib.CloseWindow();
 
     raylib.SetTargetFPS(60);
     raylib.SetExitKey(raylib.KEY_Q);
 
-    var plugin = try Plugin.init("zig-out/lib/libplugin_sprite.dylib");
+    // const plugin_name = "plugin_sprite";
+    const plugin_name = "plugin_bone2d";
+
+    var plugin = try Plugin.init(allocator, "zig-out/lib/lib" ++ plugin_name ++ ".dylib");
     defer plugin.deinit();
 
     while (!raylib.WindowShouldClose()) {

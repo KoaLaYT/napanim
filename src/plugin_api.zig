@@ -1,7 +1,7 @@
 const std = @import("std");
 
 pub const Api = extern struct {
-    init: *const fn () callconv(.c) void,
+    init: *const fn (*anyopaque) callconv(.c) void,
     deinit: *const fn () callconv(.c) void,
     pre_reload: *const fn () callconv(.c) *anyopaque,
     post_reload: *const fn (*anyopaque) callconv(.c) void,
@@ -14,7 +14,7 @@ pub const Plugin = struct {
     api: *const Api,
     inode: std.c.ino_t,
 
-    pub fn init(path: []const u8) !Plugin {
+    pub fn init(allocator: std.mem.Allocator, path: []const u8) !Plugin {
         const f = try std.fs.cwd().openFile(path, .{});
         defer f.close();
         const stat = try f.stat();
@@ -22,7 +22,7 @@ pub const Plugin = struct {
         var lib = try std.DynLib.open(path);
         const api = lib.lookup(*const Api, "api").?;
 
-        api.init();
+        api.init(@ptrCast(@constCast(&allocator)));
 
         return .{
             .path = path,

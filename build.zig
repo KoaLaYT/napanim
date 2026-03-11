@@ -19,20 +19,26 @@ pub fn build(b: *std.Build) void {
     // c_mod.linkFramework("OpenGL", .{});
 
     const build_plugin_step = b.step("plugin", "Build the plugin");
-    const plugin_lib = b.addLibrary(.{
-        .linkage = .dynamic,
-        .name = "plugin_sprite",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/plugin_sprite.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "c", .module = c_mod },
-            },
-        }),
-    });
-    const install_plugin_lib = b.addInstallArtifact(plugin_lib, .{});
-    build_plugin_step.dependOn(&install_plugin_lib.step);
+    const plugins = [_][]const u8{
+        "plugin_sprite",
+        "plugin_bone2d",
+    };
+    for (plugins) |plugin| {
+        const plugin_lib = b.addLibrary(.{
+            .linkage = .dynamic,
+            .name = plugin,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path(b.fmt("src/{s}.zig", .{plugin})),
+                .target = target,
+                .optimize = optimize,
+                .imports = &.{
+                    .{ .name = "c", .module = c_mod },
+                },
+            }),
+        });
+        const install_plugin_lib = b.addInstallArtifact(plugin_lib, .{});
+        build_plugin_step.dependOn(&install_plugin_lib.step);
+    }
 
     const exe = b.addExecutable(.{
         .name = "napanim",
@@ -52,7 +58,7 @@ pub fn build(b: *std.Build) void {
     const run_cmd = b.addRunArtifact(exe);
     run_step.dependOn(&run_cmd.step);
     run_cmd.step.dependOn(b.getInstallStep());
-    run_cmd.step.dependOn(&install_plugin_lib.step);
+    run_cmd.step.dependOn(build_plugin_step);
 
     const exe_tests = b.addTest(.{
         .root_module = exe.root_module,

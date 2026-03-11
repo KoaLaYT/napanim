@@ -3,17 +3,14 @@ const raylib = @import("c").raylib;
 const PluginApi = @import("plugin_api.zig").Api;
 
 const State = struct {
-    const GPA = std.heap.DebugAllocator(.{});
-
-    gpa: GPA,
+    allocator: std.mem.Allocator,
 
     sprite: Sprite,
 
-    fn create() !*State {
-        var gpa = GPA.init;
-        const state = try gpa.allocator().create(State);
+    fn create(allocator: std.mem.Allocator) !*State {
+        const state = try allocator.create(State);
 
-        state.gpa = gpa;
+        state.allocator = allocator;
         state.load_resource();
 
         return state;
@@ -21,10 +18,7 @@ const State = struct {
 
     fn destory(self: *State) void {
         self.unload_resource();
-
-        var gpa = self.gpa;
-        gpa.allocator().destroy(g_state);
-        _ = gpa.deinit();
+        self.allocator.destroy(g_state);
     }
 
     fn load_resource(self: *State) void {
@@ -98,9 +92,10 @@ const Sprite = struct {
 
 var g_state: *State = undefined;
 
-fn init() callconv(.c) void {
+fn init(alloc: *anyopaque) callconv(.c) void {
     raylib.TraceLog(raylib.LOG_INFO, "plugin init");
-    g_state = State.create() catch unreachable;
+    const allocator: *std.mem.Allocator = @ptrCast(@alignCast(alloc));
+    g_state = State.create(allocator.*) catch unreachable;
 }
 
 fn deinit() callconv(.c) void {
@@ -132,10 +127,6 @@ fn update() callconv(.c) void {
     const dt = raylib.GetFrameTime();
     g_state.sprite.draw(dt, x_pos, y_pos);
 }
-
-// fn log() void {
-//     raylib.TraceLog(raylib.LOG_INFO, "Time: %f", raylib.GetTime());
-// }
 
 export const api: PluginApi = .{
     .init = init,
